@@ -33,8 +33,10 @@ public class HtmlParser {
 	}
 	
 	public static String parseStatus(String html) {
-		String mark = "result-ce";
-		int startIndex = html.indexOf(mark) + mark.length() + 2;
+		String mark = "result-";
+		int startIndex = html.indexOf(mark) + mark.length();
+		while(html.charAt(startIndex) != '>') startIndex++;
+		startIndex++;
 		int endIndex = startIndex;
 		while(html.charAt(endIndex) != '<') endIndex++;
 		return html.substring(startIndex, endIndex);

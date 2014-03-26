@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import net.sf.json.JSONObject;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -33,13 +34,63 @@ public class SubmitServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
+		String uid = request.getParameter("uid");
+		String pid = request.getParameter("pid");
+		String contestId = request.getParameter("contestId");
+		String problemNum = request.getParameter("problemNum");
+		String sourceCode = request.getParameter("sourceCode");
+		String updateUrl = request.getParameter("updateUrl");
+		
+		if(StringUtils.isEmpty(uid) || StringUtils.isEmpty(pid) || StringUtils.isEmpty(contestId) || StringUtils.isEmpty(problemNum))
+			return;
+		
+		String result = submitToOj(contestId, problemNum, sourceCode);
+		String reply = updateBack(updateUrl, uid, pid, sourceCode, result);
+		System.out.println("update back response: " + reply);
+		
+//		JSONObject jsonObj = JSONObject.fromObject(reply);
+//		System.out.println(unicodeToString(jsonObj.getString("error_string")));
+		// response to POP
+	}
+	
+	private String updateBack(String updateUrl, String uid, String pid, String sourcecode, String result)
+			throws ServletException, IOException {
+		HttpClient httpClient = new DefaultHttpClient();
+		HttpPost httpPost = null;
+		
+		if(StringUtils.isEmpty(updateUrl))
+			httpPost = new HttpPost(EnvironmentProperty.get("topuUpdateUrl"));
+		else
+			httpPost = new HttpPost(updateUrl);
+		
+		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
+		nameValuePairs.add(new BasicNameValuePair("uid", uid));
+		nameValuePairs.add(new BasicNameValuePair("pid", pid));
+		nameValuePairs.add(new BasicNameValuePair("sourcecode", sourcecode));
+		nameValuePairs.add(new BasicNameValuePair("result", result));
+		
+		UrlEncodedFormEntity entity = new UrlEncodedFormEntity(nameValuePairs);
+		httpPost.setEntity(entity);
+		HttpResponse resp = httpClient.execute(httpPost);
+		
+		BufferedReader br = new BufferedReader(new InputStreamReader(resp.getEntity().getContent()));
+		String reply = "";
+		String line = "";
+		while ((line = br.readLine()) != null) {
+			reply += line;
+		}
+		return reply;
+	}
+
+	private String submitToOj(String contestId, String problemNum, String sourceCode)
+			throws ServletException, IOException {
 		HttpClient httpClient = login();
 		HttpPost httpPost = new HttpPost(EnvironmentProperty.get("submitUrl"));
 		
 		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
-		nameValuePairs.add(new BasicNameValuePair("source", ""));
-		nameValuePairs.add(new BasicNameValuePair("contestId", "3778"));
-		nameValuePairs.add(new BasicNameValuePair("problemNumber", "1"));
+		nameValuePairs.add(new BasicNameValuePair("source", sourceCode));
+		nameValuePairs.add(new BasicNameValuePair("contestId", contestId));
+		nameValuePairs.add(new BasicNameValuePair("problemNumber", problemNum));
 		nameValuePairs.add(new BasicNameValuePair("language", "G++"));
 		
 		UrlEncodedFormEntity entity = new UrlEncodedFormEntity(nameValuePairs);
@@ -52,25 +103,27 @@ public class SubmitServlet extends HttpServlet {
 		while ((line = br.readLine()) != null) {
 			reply += line;
 		}
-		System.out.println("submit response : " + reply);
+		System.out.println("submitToOj response : " + reply);
 		
 		JSONObject jsonObj = JSONObject.fromObject(reply);
 		if("ERROR".equals(jsonObj.getString("result"))) {
 			String msg = jsonObj.getString("message");
 			System.out.println(unicodeToString(msg));
+			return "failure";
 		} else {
 			String redirectUrl = jsonObj.getString("redirect");
 			String html = HtmlParser.getOnePage(redirectUrl, httpClient);
 			String ojStatus = HtmlParser.parseStatus(html);
+			while("Waiting".equals(ojStatus)) {
+				html = HtmlParser.getOnePage(redirectUrl, httpClient);
+				ojStatus = HtmlParser.parseStatus(html);
+			}
 			System.out.println(ojStatus);
-			
-			// update submitStatus to TopU
-			// response to POP
-			
+			return ojStatus;
 		}
 	}
-
-	public HttpClient login() throws ServletException, IOException {
+	
+	private HttpClient login() throws ServletException, IOException {
 		
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpPost httpPost = new HttpPost(EnvironmentProperty.get("loginUrl"));
@@ -113,13 +166,14 @@ public class SubmitServlet extends HttpServlet {
         return str;
     }
 	
-	private void checkRequestParameters(HttpServletRequest request) {
-		@SuppressWarnings("unchecked")
-		Enumeration<String> e = request.getParameterNames();
-		while(e.hasMoreElements()) {
-			String name = e.nextElement();
-			String value = request.getParameter(name);
-			System.out.println(name + " : " + value);
-		}
-	}	
+//	private void checkRequestParameters(HttpServletRequest request) {
+//		@SuppressWarnings("unchecked")
+//		Enumeration<String> e = request.getParameterNames();
+//		while(e.hasMoreElements()) {
+//			String name = e.nextElement();
+//			String value = request.getParameter(name);
+//			System.out.println(name + " : " + value);
+//		}
+//	}
+	
 }
