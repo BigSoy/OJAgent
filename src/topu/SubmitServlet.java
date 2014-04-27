@@ -49,11 +49,9 @@ public class SubmitServlet extends HttpServlet {
 		
 		String result = submitToOj(contestId, problemNum, sourceCode);
 		String reply = updateBack(updateUrl, uid, pid, sourceCode, result);
-		//System.out.println("update back response: " + reply);
 		logger.debug("update back response: " + reply);
-		
-//		JSONObject jsonObj = JSONObject.fromObject(reply);
-//		System.out.println(unicodeToString(jsonObj.getString("error_string")));
+		JSONObject jsonObj = JSONObject.fromObject(reply);
+		logger.debug("error_string: " + unicodeToString(jsonObj.getString("error_string")));
 		// response to POP
 	}
 	
@@ -107,7 +105,6 @@ public class SubmitServlet extends HttpServlet {
 		while ((line = br.readLine()) != null) {
 			reply += line;
 		}
-		//System.out.println("submitToOj response : " + reply);
 		logger.debug("submitToOj response : " + reply);
 		
 		JSONObject jsonObj = JSONObject.fromObject(reply);
@@ -123,7 +120,6 @@ public class SubmitServlet extends HttpServlet {
 				html = HtmlParser.getOnePage(redirectUrl, httpClient);
 				ojStatus = HtmlParser.parseStatus(html);
 			}
-			//System.out.println(ojStatus);
 			logger.debug("OJ status :" + ojStatus);
 			return ojStatus;
 		}
@@ -149,7 +145,6 @@ public class SubmitServlet extends HttpServlet {
 		while ((line = br.readLine()) != null) {
 			reply += line;
 		}
-		//System.out.println("login response : " + reply);
 		logger.debug("login response : " + reply);
 		return httpClient;
 	}
