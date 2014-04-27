@@ -24,12 +24,15 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import utils.EnvironmentProperty;
 
 public class SubmitServlet extends HttpServlet {
 
 	private static final long serialVersionUID = 1234538090976492241L;
+	private static Logger logger = LogManager.getLogger(SubmitServlet.class.getName());
 
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
@@ -46,7 +49,8 @@ public class SubmitServlet extends HttpServlet {
 		
 		String result = submitToOj(contestId, problemNum, sourceCode);
 		String reply = updateBack(updateUrl, uid, pid, sourceCode, result);
-		System.out.println("update back response: " + reply);
+		//System.out.println("update back response: " + reply);
+		logger.debug("update back response: " + reply);
 		
 //		JSONObject jsonObj = JSONObject.fromObject(reply);
 //		System.out.println(unicodeToString(jsonObj.getString("error_string")));
@@ -103,7 +107,8 @@ public class SubmitServlet extends HttpServlet {
 		while ((line = br.readLine()) != null) {
 			reply += line;
 		}
-		System.out.println("submitToOj response : " + reply);
+		//System.out.println("submitToOj response : " + reply);
+		logger.debug("submitToOj response : " + reply);
 		
 		JSONObject jsonObj = JSONObject.fromObject(reply);
 		if("ERROR".equals(jsonObj.getString("result"))) {
@@ -118,7 +123,8 @@ public class SubmitServlet extends HttpServlet {
 				html = HtmlParser.getOnePage(redirectUrl, httpClient);
 				ojStatus = HtmlParser.parseStatus(html);
 			}
-			System.out.println(ojStatus);
+			//System.out.println(ojStatus);
+			logger.debug("OJ status :" + ojStatus);
 			return ojStatus;
 		}
 	}
@@ -143,7 +149,8 @@ public class SubmitServlet extends HttpServlet {
 		while ((line = br.readLine()) != null) {
 			reply += line;
 		}
-		System.out.println("login response : " + reply);
+		//System.out.println("login response : " + reply);
+		logger.debug("login response : " + reply);
 		return httpClient;
 	}
 	
